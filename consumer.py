@@ -39,19 +39,25 @@ def start_scan(data: dict):
     result = scanner.get_alive_hosts_multithreaded(targets)
     data = {
         'type': 'alive_hosts',
-        'data': targets,
-    }
-    print(data)
-    publisher.send_to_queue(data)
-
-    result = scanner.get_service_versions_multithreaded(result)
-    data = {
-        'type': 'hosts_services',
         'data': result,
     }
     print(data)
     publisher.send_to_queue(data)
+
+    def on_get_action(target, services):
+        data = {
+            'type': 'host_service',
+            'data': {
+                'host': target,
+                'services': services,
+            }
+        }
+        print(data)
+        publisher.send_to_queue(data)
+
+    scanner.get_service_versions_multithreaded(result, action=on_get_action)
     is_scanning = False
+    print("Scanning finished")
 
 
 def callback(ch, method, properties, body):

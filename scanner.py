@@ -1,6 +1,7 @@
 import ipaddress
 import os
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import nmap3
@@ -70,10 +71,19 @@ class NetworkScanner(object):
 
     def get_service_version(self, target: str):
         nmap = nmap3.Nmap()
-        result = nmap.nmap_version_detection(f"{target}", args="-p-")
-        return self.format_service_version(result)
+        nmap_discovery = nmap3.NmapHostDiscovery()
+        quick_scan = nmap_discovery.nmap_portscan_only(target, args="-T4 -p- --open")
 
-    def get_service_versions_multithreaded(self, targets, max_workers=None):
+        open_ports = [
+            port_info["portid"] for port_info in quick_scan.get(target, {}).get("ports", [])
+        ]
+        detailed_args = f"-sS -sU -p {','.join(open_ports)}" if open_ports else "-p-"
+
+        detailed_scan = nmap.nmap_version_detection(f"{target}", args=detailed_args)
+
+        return self.format_service_version(detailed_scan)
+
+    def get_service_versions_multithreaded(self, targets, action=None, max_workers=None,):
         """
         Выполняет многопоточное получение информации о версиях сервисов для нескольких хостов.
         """
@@ -83,8 +93,15 @@ class NetworkScanner(object):
         results = {}
 
         def worker(target):
+            start_time = time.time()
             try:
                 results[target] = self.get_service_version(target)
+                elapsed_time = time.time() - start_time
+                print(f"Time taken for {target}: {elapsed_time:.2f} seconds")
+
+                if action is not None:
+                    action(target, results[target])
+
             except Exception as e:
                 print(f"Error processing {target}: {e}")
 

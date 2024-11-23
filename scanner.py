@@ -23,6 +23,10 @@ class NetworkScanner(object):
         """Проверяет, является ли строка IP-адресом."""
         return bool(re.fullmatch(r'^[\d.]+$', s))
 
+    @staticmethod
+    def is_domain_name(s: str):
+        return bool(re.fullmatch(r'^(?!-)([A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,}$', s))
+
     def clear_not_hosts(self, data: dict):
         """Удаляет из результата все ключи, которые не являются IP-адресами."""
         return {key: value for key, value in data.items() if self.is_host_address(key)}
@@ -150,7 +154,10 @@ class NetworkScanner(object):
             while current <= end:
                 targets.append(str(current))
                 current += 1
+        elif self.is_domain_name(target):
+            targets = [target]
         else:
             ipaddress.ip_address(target)
             targets = [target]
+
         return list(set(targets))

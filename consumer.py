@@ -49,7 +49,7 @@ def start_scan(data: dict):
             'type': 'host_service',
             'data': {
                 'host': target,
-                'services': services,
+                'services': services[target]['services'],
             }
         }
         print(data)

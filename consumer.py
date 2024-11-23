@@ -30,6 +30,8 @@ def start_scan(data: dict):
     # network_str_example = "192.168.178.3,192.168.178.4,192.168.178.5-192.168.178.7,192.168.178.0/29"
     global is_scanning
 
+    scan_result_id = data['scan_result_id']
+
     network = data['network']
     scanner = NetworkScanner()
 
@@ -39,6 +41,7 @@ def start_scan(data: dict):
     result = scanner.get_alive_hosts_multithreaded(targets)
     data = {
         'type': 'alive_hosts',
+        'scan_result_id': scan_result_id,
         'data': result,
     }
     print(data)
@@ -47,6 +50,7 @@ def start_scan(data: dict):
     def on_get_action(target, services):
         data = {
             'type': 'host_service',
+            'scan_result_id': scan_result_id,
             'data': {
                 'host': target,
                 'services': services[target]['services'],
@@ -58,6 +62,13 @@ def start_scan(data: dict):
     scanner.get_service_versions_multithreaded(result, action=on_get_action)
     is_scanning = False
     print("Scanning finished")
+    data = {
+        'type': 'scan_finished',
+        'scan_result_id': scan_result_id,
+        'network':  network,
+    }
+    print(data)
+    publisher.send_to_queue(data)
 
 
 def callback(ch, method, properties, body):

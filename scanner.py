@@ -156,7 +156,7 @@ class NetworkScanner(object):
                 current += 1
         elif self.is_domain_name(target):
             targets = [target]
-        else:
+        elif self.is_host_address(target):
             ipaddress.ip_address(target)
             targets = [target]
 
